@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thanh Thỏ Giỏ Hàng</title>
+<style>
+:root{
+  --brand:#ee4d2d; --brand-dark:#d73211; --brand-soft:#fff1ee;
+  --ink:#222; --muted:#757575; --line:#eee; --bg:#f5f5f5; --card:#fff;
+  --ok:#00a86b; --star:#ffb400;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);font-size:14px;line-height:1.45}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,textarea{font:inherit}
+.app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100vh;position:relative;padding-bottom:64px}
+
+/* demo ribbon */
+.ribbon{background:#222;color:#fff;font-size:12px;text-align:center;padding:6px 12px}
+.ribbon b{color:#ffd54a}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line)}
+.hdr .logo{font-weight:800;letter-spacing:.3px;flex:1;font-size:15px}
+.hdr .logo span{color:var(--brand)}
+.cart-btn{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center}
+.cart-btn:hover{background:var(--brand-soft)}
+.cart-btn svg{width:24px;height:24px;stroke:var(--brand)}
+.badge{position:absolute;top:1px;right:0;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--brand);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:2px solid #fff}
+.badge[hidden]{display:none}
+.bump{animation:bump .45s ease}
+@keyframes bump{30%{transform:scale(1.35)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+
+/* gallery */
+.gallery{position:relative;background:#fff}
+.slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.slides::-webkit-scrollbar{display:none}
+.slides img{flex:0 0 100%;width:100%;aspect-ratio:3/4;object-fit:cover;scroll-snap-align:start;background:#eee}
+.counter{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:2px 10px;border-radius:12px}
+
+.block{background:var(--card);padding:14px;margin-bottom:8px}
+.price-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.price{color:var(--brand);font-size:24px;font-weight:700}
+.old{color:var(--muted);text-decoration:line-through;font-size:14px}
+.off{background:var(--brand-soft);color:var(--brand);font-size:12px;font-weight:700;padding:1px 6px;border-radius:3px}
+.title{font-size:16px;font-weight:600;margin-top:6px}
+.meta{display:flex;gap:12px;color:var(--muted);font-size:13px;margin-top:6px}
+.meta .star{color:var(--star)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0;padding-top:0}
+.row .k{color:var(--muted);min-width:84px}
+.row .v{flex:1}
+.row .chev{color:var(--muted)}
+.free{color:var(--ok);font-weight:600}
+.pick{width:100%;text-align:left}
+.pick .v b{color:var(--ink)}
+.desc h3{font-size:14px;margin-bottom:8px}
+.desc p,.desc li{color:#444;font-size:13.5px}
+.desc ul{padding-left:18px}
+
+/* other products */
+.sec-title{font-weight:700;font-size:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.sec-title small{color:var(--muted);font-weight:400;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;text-align:left}
+.pc [data-go]{display:block;width:100%}
+.pc img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;background:#eee}
+.pc .in{padding:8px;display:flex;flex-direction:column;gap:4px;flex:1}
+.pc .n{font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}
+.pc .p{color:var(--brand);font-weight:700}
+.pc .link{color:var(--muted);font-size:11px}
+.pc .add{margin-top:auto;border:1px solid var(--brand);color:var(--brand);border-radius:4px;padding:6px;font-size:12.5px;font-weight:600}
+.pc .add:hover{background:var(--brand-soft)}
+
+/* bottom bar */
+.bar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;height:56px;display:flex;background:#fff;border-top:1px solid var(--line);z-index:30}
+.bar .ico{width:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#555;gap:2px}
+.bar .ico svg{width:20px;height:20px;stroke:#555}
+.bar .add{flex:1;background:#fff3f0;color:var(--brand);font-weight:700;font-size:13px;line-height:1.2;border-left:1px solid var(--line)}
+.bar .buy{flex:1;background:var(--brand);color:#fff;font-weight:700;font-size:14px}
+.bar .buy:hover{background:var(--brand-dark)}
+
+/* overlay + sheet */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:50%;bottom:0;width:100%;max-width:480px;background:#fff;z-index:50;border-radius:12px 12px 0 0;transform:translate(-50%,105%);transition:transform .25s ease;max-height:88vh;display:flex;flex-direction:column}
+.sheet.on{transform:translate(-50%,0)}
+.sh-top{display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--line);position:relative}
+.sh-top img{width:96px;height:120px;object-fit:cover;border-radius:4px;margin-top:-40px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15);background:#eee}
+.sh-top .price{font-size:20px}
+.sh-top .stock{color:var(--muted);font-size:12px}
+.x{position:absolute;right:10px;top:8px;width:32px;height:32px;font-size:22px;color:var(--muted)}
+.sh-body{padding:14px;overflow:auto}
+.lbl{font-weight:600;margin:4px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{border:1px solid #ddd;background:#fafafa;border-radius:4px;padding:7px 12px;font-size:13px;text-align:left}
+.chip small{display:block;color:var(--muted);font-size:11.5px}
+.chip.on{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+.chip.on small{color:var(--brand)}
+.qty-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0 4px}
+.step{display:inline-flex;border:1px solid #ddd;border-radius:4px;overflow:hidden}
+.step button{width:32px;height:30px;font-size:16px;color:#555}
+.step button:disabled{color:#ccc;cursor:default}
+.step span{width:40px;display:grid;place-items:center;border-left:1px solid #ddd;border-right:1px solid #ddd;font-weight:600}
+.err{color:var(--brand);font-size:12.5px;min-height:18px;margin-top:4px}
+.sh-foot{padding:10px 14px 14px;border-top:1px solid var(--line)}
+.btn{width:100%;background:var(--brand);color:#fff;font-weight:700;padding:12px;border-radius:4px;font-size:15px}
+.btn:hover{background:var(--brand-dark)}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+
+/* cart page */
+.cart{position:fixed;inset:0;z-index:60;background:var(--bg);transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+.cart.on{transform:translateX(0)}
+.c-hdr{display:flex;align-items:center;gap:8px;padding:12px 10px;background:#fff;border-bottom:1px solid var(--line)}
+.c-hdr .back{width:34px;height:34px;font-size:22px;color:var(--brand)}
+.c-hdr h2{font-size:16px;flex:1}
+.c-body{flex:1;overflow:auto;padding-bottom:10px}
+.ship-bar{background:#fff;padding:10px 14px;margin-bottom:8px;font-size:13px}
+.prog{height:6px;background:#f0f0f0;border-radius:3px;margin-top:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,#ff7a45,var(--brand));border-radius:3px;transition:width .3s}
+.ship-bar.done{color:var(--ok);font-weight:600}
+.ship-bar.done .prog i{background:var(--ok)}
+.item{background:#fff;display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.item img{width:72px;height:92px;object-fit:cover;border-radius:4px;background:#eee}
+.item .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.item .nm{font-size:13.5px;font-weight:600;line-height:1.3}
+.item .var{font-size:12px;color:var(--muted);background:#f7f7f7;padding:2px 6px;border-radius:3px;align-self:flex-start}
+.item .src{font-size:11px;color:#999}
+.item .bot{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
+.item .pr{color:var(--brand);font-weight:700}
+.item .rm{color:var(--muted);font-size:12px;text-decoration:underline;align-self:flex-start}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty svg{width:72px;height:72px;stroke:#ccc;margin-bottom:10px}
+.sum{background:#fff;padding:12px 14px;border-top:1px solid var(--line)}
+.sum .l{display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0;color:#444}
+.sum .l.t{font-size:16px;font-weight:700;color:var(--ink);padding-top:6px}
+.sum .l.t b{color:var(--brand)}
+.sum .btn{margin-top:10px}
+
+/* checkout */
+.form{background:#fff;padding:14px;margin-bottom:8px}
+.form h3{font-size:14px;margin-bottom:10px}
+.fld{margin-bottom:10px}
+.fld input,.fld textarea{width:100%;border:1px solid #ddd;border-radius:4px;padding:10px 12px;outline:none;background:#fff;color:var(--ink)}
+.fld input:focus,.fld textarea:focus{border-color:var(--brand)}
+.fld.bad input{border-color:var(--brand)}
+.fld .msg{color:var(--brand);font-size:12px;margin-top:3px;display:none}
+.fld.bad .msg{display:block}
+.cod{display:flex;align-items:center;gap:8px;border:1px solid var(--brand);background:var(--brand-soft);border-radius:4px;padding:10px 12px;color:var(--brand);font-weight:600}
+.mini{font-size:13px}
+.mini .r{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.mini .r:last-child{border-bottom:0}
+.ok-box{text-align:center;padding:30px 18px}
+.ok-box .tick{width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;font-size:34px;display:grid;place-items:center;margin:0 auto 12px}
+.ok-box pre{text-align:left;white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px;font-size:12.5px;margin:14px 0;font-family:inherit}
+
+/* toast */
+.toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.78);color:#fff;padding:16px 22px;border-radius:8px;text-align:center;z-index:80;opacity:0;pointer-events:none;transition:all .2s;min-width:200px}
+.toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.toast .t1{font-size:28px;line-height:1}
+.toast .t2{margin-top:6px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="ribbon"><b>BẢN DEMO</b> · Tính năng giỏ hàng · Bấm vào "Sản phẩm khác" để giả lập chuyển sang link khác</div>
+
+  <header class="hdr">
+    <div class="logo">THANH THỎ <span>Clothing</span></div>
+    <button class="cart-btn" id="cartBtn" aria-label="Mở giỏ hàng">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="badge" id="badge" hidden>0</span>
+    </button>
+  </header>
+
+  <main id="page"></main>
+
+  <nav class="bar">
+    <button class="ico" onclick="toast('🏪','Demo: về trang cửa hàng')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11h16V9M3 9h18"/></svg>Cửa hàng</button>
+    <button class="ico" onclick="toast('💬','Demo: mở chat Messenger/Zalo')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Trò chuyện</button>
+    <button class="add" id="barAdd">Thêm vào<br>Giỏ hàng</button>
+    <button class="buy" id="barBuy">Mua ngay</button>
+  </nav>
+</div>
+
+<div class="ov" id="ov"></div>
+
+<!-- variant picker -->
+<section class="sheet" id="sheet" aria-label="Chọn phân loại">
+  <div class="sh-top">
+    <img id="shImg" alt="">
+    <div>
+      <div class="price" id="shPrice"></div>
+      <div class="stock" id="shOld"></div>
+      <div class="stock" id="shSel">Chọn phân loại & size</div>
+    </div>
+    <button class="x" data-close aria-label="Đóng">×</button>
+  </div>
+  <div class="sh-body">
+    <div class="lbl">Phân loại</div>
+    <div class="chips" id="shVars"></div>
+    <div class="lbl">Kích cỡ</div>
+    <div class="chips" id="shSizes"></div>
+    <div class="qty-row">
+      <div class="lbl" style="margin:0">Số lượng</div>
+      <div class="step"><button id="qMinus" aria-label="Giảm">−</button><span id="qVal">1</span><button id="qPlus" aria-label="Tăng">+</button></div>
+    </div>
+    <div class="err" id="shErr"></div>
+  </div>
+  <div class="sh-foot"><button class="btn" id="shOk">Thêm vào giỏ hàng</button></div>
+</section>
+
+<!-- cart / checkout -->
+<section class="cart" id="cart" aria-label="Giỏ hàng">
+  <div class="c-hdr"><button class="back" id="cBack" aria-label="Quay lại">‹</button><h2 id="cTitle">Giỏ hàng</h2></div>
+  <div class="c-body" id="cBody"></div>
+  <div class="sum" id="cSum"></div>
+</section>
+
+<div class="toast" id="toast"><div class="t1" id="tIco">✓</div><div class="t2" id="tTxt"></div></div>
+
+<script>
+/* ===== DỮ LIỆU SẢN PHẨM (lấy từ các landing TT033–TT037) ===== */
+const IMG = p => 'https://content.pancake.vn/web-media-264/fwebp80/' + p;
+const SIZES = ['S (40-48kg)','M (48-55kg)','L (55-60kg)','XL (60-68kg)'];
+const PRODUCTS = {
+  TT037:{name:'Áo blazer vạt kiểu kèm chân váy nhung',old:970000,sold:'5.3K',
+    imgs:['4c/2a/40/a5/01c4fe9c8f540b0f79d22a1cdbc51057fb69590604a3bddd717c2655-w:876-h:1280-l:73174-t:image/jpeg.jpg','dd/fc/0c/4c/c290e36d74393bc0d1da49a88ec87b23b1a78f219e23e2931f08b687-w:1040-h:1280-l:101755-t:image/jpeg.jpg','90/29/21/4e/5aa1746a67ae304224c6dbde026de045488e0a6d546e4105eb988415-w:787-h:1280-l:71273-t:image/jpeg.jpg'],
+    vars:[{id:'ao',n:'Áo blazer',p:680000},{id:'vay',n:'Chân váy nhung',p:390000},{id:'set',n:'Cả set',p:990000,free:true}],
+    desc:'Set gồm áo khoác dạ nữ dáng ngắn ngang hông kèm đai và chân váy nhung ngắn. Áo nâu socola, cúc kim loại hình trái tim; chân váy chữ A đen, phom trơn tối giản.'},
+  TT036:{name:'Set áo lửng viền bèo & chân váy bút chì',old:970000,sold:'4.1K',
+    imgs:['bb/b3/f3/55/821ea90514897a97158aa87fdb01773c0b27dcbdc91768ccd3def598-w:1316-h:2048-l:240722-t:image/jpeg.jpg','76/56/83/b5/138c7f079c28b939cf92d91b2020c767a4823b51234aa3c67cbddc8b-w:1306-h:2048-l:292028-t:image/jpeg.jpg'],
+    vars:[{id:'1set',n:'1 set',p:680000},{id:'2set',n:'Combo 2 set',p:1250000,free:true}],
+    desc:'Set áo lửng viền bèo phối chân váy bút chì, tôn dáng, phù hợp đi làm, đi chơi.'},
+  TT035:{name:'Áo Blazer tôn dáng',old:785000,sold:'3.8K',
+    imgs:['09/a3/07/05/23d6da50308889f14ec41df3a7d62959a44ff4de4668334f0e84bd05-w:1306-h:2048-l:178698-t:image/jpeg.jpg','56/84/70/21/93a620e55213d97d9f46b96d26633f9381fd2d73d2494d3dfbcd32f7-w:1306-h:2048-l:140942-t:image/jpeg.jpg'],
+    vars:[{id:'ao',n:'Áo blazer (tặng áo 2 dây)',p:550000},{id:'vay',n:'Chân váy',p:350000},{id:'set',n:'Cả set',p:850000,free:true}],
+    desc:'Áo blazer form tôn dáng, tặng kèm áo 2 dây.'},
+  TT034:{name:'Set đồ dạ Tweed phong cách sang trọng',old:1400000,sold:'2.6K',
+    imgs:['b3/5f/1a/8c/138aa4d0ffa0d12d8a2a97d1dc48a118652be14fc9761c455ca2aeee-w:1260-h:2296-l:479562-t:image/jpeg.jpg','18/65/6a/f9/e73c657a3651feb1ba28cd9f3f3d3966c394d1247095a0fe87aaf7cb-w:1260-h:2296-l:488358-t:image/jpeg.jpg'],
+    vars:[{id:'1set',n:'1 set',p:980000},{id:'2set',n:'Combo 2 set',p:1850000,free:true}],
+    desc:'Set dạ Tweed sang trọng, chuẩn chất thu đông.'},
+  TT033:{name:'Set áo ren hoa & chân váy lụa',old:615000,sold:'4.4K',
+    imgs:['f9/ba/36/60/5769415a1605d1ae8487a1c8cbb60828c60301a095a339254222cf3e-w:1080-h:1920-l:262505-t:image/jpeg.jpg','7a/b4/f6/1e/b4d76b94f9e5ffad78dc93767c9ec0e5303e0b88471e0edfb129675c-w:1080-h:1920-l:282734-t:image/jpeg.jpg'],
+    vars:[{id:'ao',n:'Áo ren hoa',p:430000},{id:'vay',n:'Chân váy lụa',p:390000},{id:'set',n:'Cả set',p:770000,free:true}],
+    desc:'Set áo ren hoa nữ tính phối chân váy lụa mềm.'}
+};
+const FREE_SHIP_MIN = 800000, SHIP_FEE = 20000, SHIP_OLD = 40000;
+const PHONE_RE = /^(\+84|84|0)(3([2-9])|5(2|5|6|8|9)|7(0|[6-9])|8([1-9])|9([0-4]|[6-9]))([0-9]{7})$/;
+
+/* ===== TIỆN ÍCH ===== */
+const $ = id => document.getElementById(id);
+const vnd = n => n.toLocaleString('vi-VN') + 'đ';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const minPrice = p => Math.min(...p.vars.map(v => v.p));
+
+/* ===== GIỎ HÀNG — lưu localStorage, dùng chung cho mọi link cùng tên miền ===== */
+const KEY = 'thanhtho_cart_v1';
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { cart = []; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch (e) {} renderBadge(); }
+function addToCart(code, varId, size, qty){
+  const key = code + '|' + varId + '|' + size;
+  const ex = cart.find(i => i.key === key);
+  if (ex) ex.qty = Math.min(ex.qty + qty, 10);
+  else cart.push({key, code, varId, size, qty});
+  save();
+}
+function lineInfo(i){ const p = PRODUCTS[i.code], v = p.vars.find(x => x.id === i.varId); return {p, v, total: v.p * i.qty}; }
+function totals(){
+  const sub = cart.reduce((s, i) => s + lineInfo(i).total, 0);
+  const hasFreeVar = cart.some(i => lineInfo(i).v.free);
+  const free = sub >= FREE_SHIP_MIN || hasFreeVar;
+  const ship = cart.length ? (free ? 0 : SHIP_FEE) : 0;
+  return {sub, ship, total: sub + ship, free, count: cart.reduce((s, i) => s + i.qty, 0)};
+}
+function renderBadge(bump){
+  const n = totals().count, b = $('badge');
+  b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
+  if (bump){ b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+}
+
+/* ===== TRANG SẢN PHẨM (mỗi mã = 1 link riêng, ví dụ /TT037) ===== */
+let cur = 'TT037';
+function codeFromHash(){ const h = location.hash.slice(1).toUpperCase(); return PRODUCTS[h] ? h : 'TT037'; }
+function go(code){ cur = code; try { history.replaceState(null, '', '#' + code); } catch (e) {} renderPage(); }
+function renderPage(){
+  const p = PRODUCTS[cur], low = minPrice(p);
+  const off = Math.round((1 - low / p.old) * 100);
+  const others = Object.keys(PRODUCTS).filter(c => c !== cur);
+  $('page').innerHTML = `
+    <div class="gallery">
+      <div class="slides" id="slides">${p.imgs.map((s,i) => `<img src="${IMG(s)}" alt="${esc(p.name)} ${i+1}" ${i?'loading="lazy"':''}>`).join('')}</div>
+      <div class="counter" id="cnt">1/${p.imgs.length}</div>
+    </div>
+    <div class="block">
+      <div class="price-row"><span class="price">${vnd(low)}</span><span class="old">${vnd(p.old)}</span><span class="off">-${off}%</span></div>
+      <div class="title">${esc(p.name)}</div>
+      <div class="meta"><span><span class="star">★</span> 4.9/5 (3.5k)</span><span>Đã bán ${p.sold}</span><span>Mã: ${cur}</span></div>
+    </div>
+    <div class="block">
+      <div class="row"><span class="k">Thanh toán</span><span class="v">Thanh toán khi nhận hàng (COD)</span></div>
+      <div class="row"><span class="k">Vận chuyển</span><span class="v"><s style="color:#999">${vnd(SHIP_OLD)}</s> ${vnd(SHIP_FEE)} · <span class="free">Miễn phí đơn từ ${vnd(FREE_SHIP_MIN)}</span></span></div>
+      <div class="row"><span class="k">Đổi trả</span><span class="v">Trả hàng trong 3 ngày · Kiểm tra hàng trước khi thanh toán</span></div>
+      <button class="row pick" id="pickRow"><span class="k">Phân loại</span><span class="v">${p.vars.map(v=>esc(v.n)).join(', ')} · <b>Size S–XL</b></span><span class="chev">›</span></button>
+    </div>
+    <div class="block desc">
+      <h3>Mô tả sản phẩm</h3>
+      <p>${esc(p.desc)}</p>
+      <ul style="margin-top:8px">${p.vars.map(v=>`<li>${esc(v.n)}: <b>${vnd(v.p)}</b>${v.free?' + miễn ship':''}</li>`).join('')}</ul>
+      <p style="margin-top:8px"><b>Bảng size:</b> ${SIZES.join(' · ')}</p>
+    </div>
+    <div class="block">
+      <div class="sec-title">Sản phẩm khác của shop <small>Thêm nhiều món vào 1 đơn</small></div>
+      <div class="grid">${others.map(c => { const o = PRODUCTS[c]; return `
+        <div class="pc">
+          <button data-go="${c}" title="Mở link /${c}"><img src="${IMG(o.imgs[0])}" alt="${esc(o.name)}" loading="lazy"></button>
+          <div class="in">
+            <button data-go="${c}" class="n" style="text-align:left">${esc(o.name)}</button>
+            <div class="p">từ ${vnd(minPrice(o))}</div>
+            <div class="link">thanhthoclothing.top/${c}</div>
+            <button class="add" data-quick="${c}">+ Thêm vào giỏ</button>
+          </div>
+        </div>`; }).join('')}</div>
+    </div>`;
+  const sl = $('slides');
+  sl.addEventListener('scroll', () => { $('cnt').textContent = (Math.round(sl.scrollLeft / sl.clientWidth) + 1) + '/' + p.imgs.length; }, {passive:true});
+  $('pickRow').onclick = () => openSheet(cur, 'add');
+  document.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => openSheet(b.dataset.quick, 'add'));
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+  window.scrollTo(0, 0);
+}
+
+/* ===== BẢNG CHỌN PHÂN LOẠI ===== */
+let sh = {code:null, mode:'add', varId:null, size:null, qty:1};
+function openSheet(code, mode){
+  const p = PRODUCTS[code];
+  sh = {code, mode, varId: p.vars.length === 1 ? p.vars[0].id : null, size:null, qty:1};
+  $('shImg').src = IMG(p.imgs[0]);
+  $('shVars').innerHTML = p.vars.map(v => `<button class="chip" data-v="${v.id}">${esc(v.n)}<small>${vnd(v.p)}${v.free?' · miễn ship':''}</small></button>`).join('');
+  $('shSizes').innerHTML = SIZES.map(s => `<button class="chip" data-s="${s}">${s}</button>`).join('');
+  $('shVars').querySelectorAll('.chip').forEach(b => b.onclick = () => { sh.varId = b.dataset.v; syncSheet(); });
+  $('shSizes').querySelectorAll('.chip').forEach(b => b.onclick = () => { sh.size = b.dataset.s; syncSheet(); });
+  $('shOk').textContent = mode === 'buy' ? 'Mua ngay' : 'Thêm vào giỏ hàng';
+  $('shErr').textContent = '';
+  syncSheet();
+  $('ov').classList.add('on'); $('sheet').classList.add('on');
+}
+function syncSheet(){
+  const p = PRODUCTS[sh.code], v = p.vars.find(x => x.id === sh.varId);
+  $('shPrice').textContent = v ? vnd(v.p * sh.qty) : vnd(minPrice(p)) + ' – ' + vnd(Math.max(...p.vars.map(x=>x.p)));
+  $('shOld').innerHTML = `<s>${vnd(p.old)}</s> · ${esc(p.name)}`;
+  $('shSel').textContent = [v && v.n, sh.size].filter(Boolean).join(' · ') || 'Chọn phân loại & size';
+  $('shVars').querySelectorAll('.chip').forEach(b => b.classList.toggle('on', b.dataset.v === sh.varId));
+  $('shSizes').querySelectorAll('.chip').forEach(b => b.classList.toggle('on', b.dataset.s === sh.size));
+  $('qVal').textContent = sh.qty;
+  $('qMinus').disabled = sh.qty <= 1; $('qPlus').disabled = sh.qty >= 10;
+  if (v && sh.size) $('shErr').textContent = '';
+}
+$('qMinus').onclick = () => { sh.qty = Math.max(1, sh.qty - 1); syncSheet(); };
+$('qPlus').onclick = () => { sh.qty = Math.min(10, sh.qty + 1); syncSheet(); };
+$('shOk').onclick = () => {
+  if (!sh.varId) return $('shErr').textContent = 'Vui lòng chọn phân loại';
+  if (!sh.size) return $('shErr').textContent = 'Vui lòng chọn size';
+  addToCart(sh.code, sh.varId, sh.size, sh.qty);
+  closeAll();
+  if (sh.mode === 'buy') { openCart('checkout'); }
+  else { renderBadge(true); toast('✓', 'Đã thêm vào giỏ hàng'); }
+};
+function closeAll(){ $('ov').classList.remove('on'); $('sheet').classList.remove('on'); }
+$('ov').onclick = closeAll;
+document.querySelector('[data-close]').onclick = closeAll;
+$('barAdd').onclick = () => openSheet(cur, 'add');
+$('barBuy').onclick = () => openSheet(cur, 'buy');
+
+/* ===== GIỎ HÀNG / ĐẶT HÀNG ===== */
+let view = 'cart';
+function openCart(v){ view = v || 'cart'; renderCart(); $('cart').classList.add('on'); }
+$('cartBtn').onclick = () => openCart('cart');
+$('cBack').onclick = () => {
+  if (view === 'checkout') { view = 'cart'; renderCart(); }
+  else { $('cart').classList.remove('on'); if (view === 'done') { view = 'cart'; } }
+};
+function shipBar(t){
+  if (t.free) return `<div class="ship-bar done">✓ Đơn hàng được MIỄN PHÍ VẬN CHUYỂN<div class="prog"><i style="width:100%"></i></div></div>`;
+  const need = FREE_SHIP_MIN - t.sub, pct = Math.min(100, t.sub / FREE_SHIP_MIN * 100);
+  return `<div class="ship-bar">Mua thêm <b style="color:var(--brand)">${vnd(need)}</b> để được <b>miễn phí vận chuyển</b><div class="prog"><i style="width:${pct}%"></i></div></div>`;
+}
+function sumHtml(t, btn){
+  return `<div class="l"><span>Tạm tính (${t.count} sản phẩm)</span><span>${vnd(t.sub)}</span></div>
+    <div class="l"><span>Phí vận chuyển</span><span>${t.ship ? vnd(t.ship) : '<span class="free">Miễn phí</span>'}</span></div>
+    <div class="l t"><span>Tổng thanh toán</span><b>${vnd(t.total)}</b></div>${btn}`;
+}
+function renderCart(){
+  const t = totals(), body = $('cBody'), sum = $('cSum');
+  if (view === 'done') return;
+  if (!cart.length){
+    $('cTitle').textContent = 'Giỏ hàng';
+    body.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><p>Giỏ hàng đang trống</p><button class="btn ghost" style="margin-top:14px;width:auto;padding:10px 22px" id="goShop">Tiếp tục mua sắm</button></div>`;
+    sum.innerHTML = ''; sum.style.display = 'none';
+    $('goShop').onclick = () => $('cart').classList.remove('on');
+    return;
+  }
+  sum.style.display = '';
+  if (view === 'cart'){
+    $('cTitle').textContent = `Giỏ hàng (${t.count})`;
+    body.innerHTML = shipBar(t) + cart.map((i, idx) => { const {p, v, total} = lineInfo(i); return `
+      <div class="item">
+        <img src="${IMG(p.imgs[0])}" alt="">
+        <div class="info">
+          <div class="nm">${esc(p.name)}</div>
+          <div class="var">${esc(v.n)} · Size ${esc(i.size)}</div>
+          <div class="src">/${i.code} · ${vnd(v.p)}/sp${v.free?' · miễn ship':''}</div>
+          <div class="bot">
+            <span class="pr">${vnd(total)}</span>
+            <div class="step"><button data-dec="${idx}" ${i.qty<=1?'disabled':''} aria-label="Giảm">−</button><span>${i.qty}</span><button data-inc="${idx}" ${i.qty>=10?'disabled':''} aria-label="Tăng">+</button></div>
+          </div>
+        </div>
+        <button class="rm" data-rm="${idx}">Xoá</button>
+      </div>`; }).join('');
+    sum.innerHTML = sumHtml(t, `<button class="btn" id="toCheckout">Đặt hàng</button>`);
+    body.querySelectorAll('[data-dec]').forEach(b => b.onclick = () => { cart[b.dataset.dec].qty--; save(); renderCart(); });
+    body.querySelectorAll('[data-inc]').forEach(b => b.onclick = () => { cart[b.dataset.inc].qty++; save(); renderCart(); });
+    body.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { cart.splice(+b.dataset.rm, 1); save(); renderCart(); });
+    $('toCheckout').onclick = () => { view = 'checkout'; renderCart(); };
+  } else {
+    $('cTitle').textContent = 'Thông tin đặt hàng';
+    const d = window._draft || {};
+    body.innerHTML = `
+      <form class="form" id="coForm" novalidate>
+        <h3>Địa chỉ nhận hàng</h3>
+        <div class="fld" id="fN"><input name="full_name" placeholder="Họ và tên" value="${esc(d.full_name||'')}"><div class="msg">Vui lòng nhập họ tên</div></div>
+        <div class="fld" id="fP"><input name="phone_number" type="tel" placeholder="Số điện thoại" value="${esc(d.phone_number||'')}"><div class="msg">Số điện thoại không hợp lệ</div></div>
+        <div class="fld" id="fA"><input name="address" placeholder="Địa chỉ: số nhà / thôn / xóm, phường/xã, tỉnh" value="${esc(d.address||'')}"><div class="msg">Vui lòng nhập địa chỉ</div></div>
+        <div class="fld"><textarea name="note" rows="2" placeholder="Ghi chú cho shop (không bắt buộc)">${esc(d.note||'')}</textarea></div>
+      </form>
+      <div class="form"><h3>Phương thức thanh toán</h3><div class="cod">💵 Thanh toán khi nhận hàng (COD)</div></div>
+      <div class="form mini"><h3>Sản phẩm (${t.count})</h3>${cart.map(i => { const {p, v, total} = lineInfo(i); return `<div class="r"><span>${esc(p.name)} — ${esc(v.n)}, ${esc(i.size)} × ${i.qty}</span><b>${vnd(total)}</b></div>`; }).join('')}</div>`;
+    sum.innerHTML = sumHtml(t, `<button class="btn" id="placeOrder">Xác nhận đặt hàng · ${vnd(t.total)}</button>`);
+    $('coForm').oninput = e => { window._draft = Object.fromEntries(new FormData($('coForm'))); };
+    $('placeOrder').onclick = placeOrder;
+  }
+}
+function placeOrder(){
+  const f = Object.fromEntries(new FormData($('coForm')));
+  const phone = (f.phone_number||'').replace(/[\s.]/g,'');
+  const okN = f.full_name.trim().length >= 2, okP = PHONE_RE.test(phone), okA = f.address.trim().length >= 5;
+  $('fN').classList.toggle('bad', !okN); $('fP').classList.toggle('bad', !okP); $('fA').classList.toggle('bad', !okA);
+  if (!(okN && okP && okA)) return;
+  const t = totals();
+  /* Bản thật: gửi `order` về Pancake POS / Google Sheet / webhook tại đây */
+  const order = {
+    full_name: f.full_name.trim(), phone_number: phone, address: f.address.trim(), note: f.note.trim(),
+    items: cart.map(i => { const {p, v} = lineInfo(i); return {code:i.code, product:p.name, variant:v.n, size:i.size, qty:i.qty, price:v.p}; }),
+    subtotal: t.sub, shipping: t.ship, total: t.total
+  };
+  const txt = `Khách: ${order.full_name} · ${order.phone_number}\nĐ/c: ${order.address}${order.note?'\nGhi chú: '+order.note:''}\n\n` +
+    order.items.map(i => `• [${i.code}] ${i.product} — ${i.variant}, ${i.size} × ${i.qty} = ${vnd(i.price*i.qty)}`).join('\n') +
+    `\n\nTạm tính: ${vnd(t.sub)}\nVận chuyển: ${t.ship ? vnd(t.ship) : 'Miễn phí'}\nTổng (COD): ${vnd(t.total)}`;
+  view = 'done';
+  $('cTitle').textContent = 'Đặt hàng thành công';
+  $('cBody').innerHTML = `<div class="ok-box"><div class="tick">✓</div><h3>Cảm ơn bạn đã đặt hàng!</h3><p style="color:var(--muted);margin-top:4px">Shop sẽ gọi xác nhận trong thời gian sớm nhất.</p><pre>${esc(txt)}</pre><p style="color:var(--muted);font-size:12px">(Demo: đơn chưa được gửi đi. Bản thật sẽ đẩy 1 đơn gộp tất cả sản phẩm về Pancake.)</p><button class="btn" style="margin-top:14px" id="again">Tiếp tục mua sắm</button></div>`;
+  $('cSum').style.display = 'none';
+  cart = []; save(); window._draft = null;
+  $('again').onclick = () => { $('cart').classList.remove('on'); view = 'cart'; };
+}
+
+/* ===== TOAST ===== */
+let tt;
+function toast(ico, txt){ $('tIco').textContent = ico; $('tTxt').textContent = txt; $('toast').classList.add('on'); clearTimeout(tt); tt = setTimeout(() => $('toast').classList.remove('on'), 1300); }
+
+window.addEventListener('hashchange', () => { cur = codeFromHash(); renderPage(); });
+cur = codeFromHash(); renderPage(); renderBadge();
+</script>
+</body>
+</html>
