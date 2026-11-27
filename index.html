@@ -38,6 +38,12 @@ input,textarea{font:inherit}
 .slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
 .slides::-webkit-scrollbar{display:none}
 .slides img{flex:0 0 100%;width:100%;aspect-ratio:3/4;object-fit:cover;scroll-snap-align:start;background:#eee}
+.slides{scroll-behavior:smooth;cursor:grab}
+.gnav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.85);color:#333;font-size:24px;line-height:34px;padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2}
+.gnav.prev{left:10px}.gnav.next{right:10px}
+.dots{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.dots i{width:7px;height:7px;border-radius:4px;background:rgba(255,255,255,.6);box-shadow:0 0 2px rgba(0,0,0,.4);transition:width .2s}
+.dots i.on{background:#fff;width:18px}
 .counter{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:2px 10px;border-radius:12px}
 
 .block{background:var(--card);padding:14px;margin-bottom:8px}
@@ -293,6 +299,7 @@ function renderPage(){
   $('page').innerHTML = `
     <div class="gallery">
       <div class="slides" id="slides">${p.imgs.map((s,i) => `<img src="${IMG(s)}" alt="${esc(p.name)} ${i+1}" ${i?'loading="lazy"':''}>`).join('')}</div>
+      ${p.imgs.length > 1 ? `<button class="gnav prev" id="gPrev" aria-label="Ảnh trước">‹</button><button class="gnav next" id="gNext" aria-label="Ảnh sau">›</button><div class="dots" id="dots">${p.imgs.map((_,i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}
       <div class="counter" id="cnt">1/${p.imgs.length}</div>
     </div>
     <div class="block">
@@ -326,7 +333,15 @@ function renderPage(){
         </div>`; }).join('')}</div>
     </div>`;
   const sl = $('slides');
-  sl.addEventListener('scroll', () => { $('cnt').textContent = (Math.round(sl.scrollLeft / sl.clientWidth) + 1) + '/' + p.imgs.length; }, {passive:true});
+  const gIdx = () => Math.round(sl.scrollLeft / sl.clientWidth);
+  const gTo = i => { const n = p.imgs.length; sl.scrollTo({left: ((i + n) % n) * sl.clientWidth}); };
+  sl.addEventListener('scroll', () => { const i = gIdx(); $('cnt').textContent = (i + 1) + '/' + p.imgs.length;
+    document.querySelectorAll('#dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, {passive:true});
+  if ($('gPrev')) { $('gPrev').onclick = () => gTo(gIdx() - 1); $('gNext').onclick = () => gTo(gIdx() + 1); }
+  // kéo chuột trên máy tính
+  let gx = null;
+  sl.addEventListener('mousedown', e => { gx = e.clientX; e.preventDefault(); });
+  window.onmouseup = e => { if (gx === null) return; const d = e.clientX - gx; gx = null; if (Math.abs(d) > 40) gTo(gIdx() + (d < 0 ? 1 : -1)); };
   $('pickRow').onclick = () => openSheet(cur, 'add');
   document.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => openSheet(b.dataset.quick, 'add'));
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
