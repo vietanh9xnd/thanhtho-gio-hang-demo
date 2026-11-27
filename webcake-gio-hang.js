@@ -227,7 +227,8 @@
       if (P.sizeSel && mine.size) setVal(P.sizeSel, mine.size);
     }
     $('#tghStrip').dataset.show = '1'; strip();
-    P.form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var box = P.form.parentElement || P.form;
+    window.scrollTo({ top: box.getBoundingClientRect().top + window.pageYOffset - 70, behavior: 'smooth' });
     var first = $('input[name=full_name], input[name=phone_number]', P.form); if (first) setTimeout(function () { first.focus(); }, 500);
   }
   function noteField(form) {
