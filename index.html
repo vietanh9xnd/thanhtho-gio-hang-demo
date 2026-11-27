@@ -333,8 +333,9 @@ function renderPage(){
         </div>`; }).join('')}</div>
     </div>`;
   const sl = $('slides');
-  const gIdx = () => Math.round(sl.scrollLeft / sl.clientWidth);
-  const gTo = i => { const n = p.imgs.length; sl.scrollTo({left: ((i + n) % n) * sl.clientWidth}); };
+  let gT = 0, gAt = 0; // ảnh đích khi đang trượt
+  const gIdx = () => Date.now() - gAt < 700 ? gT : Math.round(sl.scrollLeft / sl.clientWidth);
+  const gTo = i => { const n = p.imgs.length; gT = (i + n) % n; gAt = Date.now(); sl.scrollTo({left: gT * sl.clientWidth}); };
   sl.addEventListener('scroll', () => { const i = gIdx(); $('cnt').textContent = (i + 1) + '/' + p.imgs.length;
     document.querySelectorAll('#dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, {passive:true});
   if ($('gPrev')) { $('gPrev').onclick = () => gTo(gIdx() - 1); $('gNext').onclick = () => gTo(gIdx() + 1); }
