@@ -227,9 +227,38 @@
       if (P.sizeSel && mine.size) setVal(P.sizeSel, mine.size);
     }
     $('#tghStrip').dataset.show = '1'; strip();
-    var box = P.form.parentElement || P.form;
-    window.scrollTo({ top: box.getBoundingClientRect().top + window.pageYOffset - 70, behavior: 'smooth' });
+    var opener = formOpener();
+    if (opener) opener.click(); // form nằm trong popup → bấm nút mở popup của trang
+    else {
+      var box = P.form.parentElement || P.form;
+      window.scrollTo({ top: box.getBoundingClientRect().top + window.pageYOffset - 70, behavior: 'smooth' });
+    }
     var first = $('input[name=full_name], input[name=phone_number]', P.form); if (first) setTimeout(function () { first.focus(); }, 500);
+  }
+  // Tìm nút Webcake mở popup chứa form (ưu tiên nút "Mua…/Đặt hàng", bỏ qua nút "Thêm vào giỏ")
+  function formOpener() {
+    var pop = P.form.closest('.com-popup'); if (!pop) return null;
+    var pid = pop.id.replace(/^w-/, ''), vm = (window.WebcakeScript && WebcakeScript.runtime && WebcakeScript.runtime.vm) || {};
+    var best = null, bestScore = -1;
+    Object.keys(vm).forEach(function (id) {
+      (vm[id].events || []).forEach(function (ev) {
+        if (ev.action !== 'open_popup' || ev.target !== pid) return;
+        var el = document.getElementById('w-' + id); if (!el) return;
+        var tx = el.innerText || '', sc = (vm[id].type === 'button' ? 2 : 0) + (/mua|đặt/i.test(tx) ? 3 : 0) - (/giỏ/i.test(tx) ? 5 : 0);
+        if (sc > bestScore) { bestScore = sc; best = el; }
+      });
+    });
+    return best;
+  }
+  // Nút "Thêm vào giỏ hàng" có sẵn trên trang → mở bảng chọn của giỏ thay vì popup đặt hàng
+  var nativeAdd = P && $$('.com-button').filter(function (b) { return /thêm\s*vào\s*giỏ/i.test(b.innerText || ''); });
+  if (nativeAdd && nativeAdd.length) {
+    if ($('#tghAdd')) $('#tghAdd').style.display = 'none';
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest) return;
+      var b = e.target.closest('.com-button');
+      if (b && nativeAdd.indexOf(b) >= 0) { e.preventDefault(); e.stopImmediatePropagation(); openSheet(); }
+    }, true);
   }
   function noteField(form) {
     for (var i = 0; i < CFG.noteFields.length; i++) { var f = $('[name="' + CFG.noteFields[i] + '"]', form); if (f) return f; }
@@ -250,6 +279,7 @@
     var phone = $('input[name=phone_number]', P.form);
     clearTimeout(onSubmitIntent.t); onSubmitIntent.t = 0;
     if (!phone || !/^(\+?84|0)\d{9}$/.test(phone.value.replace(/[\s.]/g, '')) || !(addr && addr.value.trim())) return;
+    onSubmitIntent.at = Date.now();
     onSubmitIntent.t = setTimeout(function () {
       if (phone && !phone.value) { cart = []; save(cart); badge(); }
     }, 4000);
@@ -258,7 +288,7 @@
   document.addEventListener('submit', onSubmitIntent, true);
   window.addEventListener('pagehide', function () {
     // chuyển sang trang cảm ơn sau khi bấm đặt hàng → coi như thành công
-    if (onSubmitIntent.t) { cart = []; save(cart); }
+    if (onSubmitIntent.t && Date.now() - onSubmitIntent.at < 15000) { cart = []; save(cart); }
   });
   window.addEventListener('storage', function (e) { if (e.key === CFG.key) { cart = load(); badge(); } });
 
