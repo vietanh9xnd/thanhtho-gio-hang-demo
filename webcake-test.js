@@ -426,8 +426,15 @@
     sum.innerHTML = sumHtml(t, '<button class="tt-btn" id="ttPlace">Xác nhận đặt hàng · ' + vnd(t.total) + '</button>');
     $('#ttCo').oninput = function () { $$('#ttCo [name]').forEach(function (i) { draft[i.name] = i.value; }); };
   }
+  function closeWebcakePopup() {
+    var pop = P && P.form && P.form.closest('.com-popup'); if (!pop || pop.classList.contains('d-none')) return;
+    var vm = vmAll(), x = $$('[id^="w-"]', pop).filter(function (el) {
+      return ((vm[el.id.slice(2)] || {}).events || []).some(function (ev) { return ev.action === 'close_popup'; });
+    })[0];
+    if (x) x.click();
+  }
   function renderDone(info) {
-    view = 'done';
+    view = 'done'; setTimeout(closeWebcakePopup, 300);
     $('#ttCTitle').textContent = 'Đặt hàng thành công';
     $('#ttCBody').innerHTML = '<div class="tt-ok"><div class="tick">✓</div><h3>Cảm ơn bạn đã đặt hàng!</h3>' +
       '<p class="sm">Shop sẽ gọi xác nhận trong thời gian sớm nhất.</p><pre>' + esc(info) + '</pre>' +
