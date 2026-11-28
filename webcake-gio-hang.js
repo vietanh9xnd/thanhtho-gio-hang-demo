@@ -196,6 +196,19 @@
     '.tt-sum .l.t{font-size:16px;font-weight:700;color:var(--ink);padding-top:6px}.tt-sum .l.t b{color:var(--b)}' +
     '.tt-sum .tt-btn{margin-top:10px}' +
     '.tt-top{padding-bottom:64px}' +
+    '.tt-form{background:#fff;padding:14px;margin-bottom:8px}.tt-form h3{font-size:14px;margin-bottom:10px;font-weight:700}' +
+    '.tt-fld{margin-bottom:10px}' +
+    '.tt-fld input,.tt-fld textarea{width:100%;border:1px solid #ddd;border-radius:4px;padding:10px 12px;outline:none;background:#fff;color:var(--ink);font:inherit;font-size:14px}' +
+    '.tt-fld input:focus,.tt-fld textarea:focus{border-color:var(--b)}' +
+    '.tt-fld.bad input{border-color:var(--b)}.tt-fld .msg{color:var(--b);font-size:12px;margin-top:3px;display:none}.tt-fld.bad .msg{display:block}' +
+    '.tt-cod{display:flex;align-items:center;gap:8px;border:1px solid var(--b);background:var(--bs);border-radius:4px;padding:10px 12px;color:var(--b);font-weight:600}' +
+    '.tt-mini{font-size:13px}.tt-mini .r{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed #eee}.tt-mini .r:last-child{border-bottom:0}' +
+    '.tt-ok{text-align:center;padding:30px 18px}.tt-ok .tick{width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;font-size:34px;display:grid;place-items:center;margin:0 auto 12px}' +
+    '.tt-ok h3{font-size:17px;font-weight:700}.tt-ok .sm{color:var(--mu);margin-top:4px}' +
+    '.tt-ok pre{text-align:left;white-space:pre-wrap;background:#fff;border:1px solid #eee;border-radius:6px;padding:12px;font-size:12.5px;margin:14px 0;font-family:inherit}' +
+    '.tt-load{position:fixed;inset:0;z-index:2147483005;background:rgba(255,255,255,.92);display:none;align-items:center;justify-content:center;font-weight:600;color:#333}' +
+    '.tt-load.on{display:flex}.tt-load div{display:flex;flex-direction:column;align-items:center;gap:12px}' +
+    '.tt-load i{width:36px;height:36px;border:3px solid #eee;border-top-color:#ee4d2d;border-radius:50%;animation:ttspin .8s linear infinite}@keyframes ttspin{to{transform:rotate(360deg)}}' +
     '.tt-desc h3{font-size:14px;margin-bottom:8px;font-weight:700}.tt-desc p,.tt-desc li{color:#444;font-size:13.5px}.tt-desc ul{padding-left:18px!important;margin:8px 0!important}' +
     '.tt-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:420px;height:56px;display:flex;background:#fff;border-top:1px solid #eee;z-index:30;padding-bottom:env(safe-area-inset-bottom)}' +
     '.tt-bar .ico{width:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#555;gap:2px;text-align:center!important}' +
@@ -349,20 +362,30 @@
       if (ex) ex.q = Math.min(10, ex.q + sh.q);
       else cart.push({ code: P.code, name: P.name, img: P.imgs[0] || '', value: v.value, label: v.label, price: v.price, free: v.free, size: size, q: sh.q });
       save(cart); closeAll(); badge(true);
-      if (sh.mode === 'buy') openCart(); else toast('✓', 'Đã thêm vào giỏ hàng');
+      if (sh.mode === 'buy') openCart('checkout'); else toast('✓', 'Đã thêm vào giỏ hàng');
       return;
     } else return;
     renderSheet();
   });
 
   // ===== Giỏ hàng =====
-  var cartEl = $('#ttCart');
-  function openCart() { cart = load(); renderCart(); cartEl.classList.add('on'); }
-  $('#ttBack').onclick = function () { cartEl.classList.remove('on'); };
+  var cartEl = $('#ttCart'), view = 'cart', draft = {};
+  function openCart(v) { cart = load(); view = v || 'cart'; renderCart(); cartEl.classList.add('on'); }
+  $('#ttBack').onclick = function () {
+    if (view === 'checkout') { view = 'cart'; renderCart(); }
+    else { cartEl.classList.remove('on'); view = 'cart'; }
+  };
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-cart]')) openCart(); });
+  function sumHtml(t, btn) {
+    return '<div class="l"><span>Tạm tính (' + t.n + ' sản phẩm)</span><span>' + vnd(t.sub) + '</span></div>' +
+      '<div class="l"><span>Phí vận chuyển</span><span>' + (t.ship ? vnd(t.ship) : '<span class="tt-free">Miễn phí</span>') + '</span></div>' +
+      '<div class="l t"><span>Tổng thanh toán</span><b>' + vnd(t.total) + '</b></div>' + btn;
+  }
   function renderCart() {
     var t = totals(), body = $('#ttCBody'), sum = $('#ttCSum');
+    if (view === 'done') return;
     $('#ttCTitle').textContent = 'Giỏ hàng' + (t.n ? ' (' + t.n + ')' : '');
+    if (cart.length && view === 'checkout') return renderCheckout(t, body, sum);
     if (!cart.length) {
       body.innerHTML = '<div class="tt-empty">' + CART_SVG.replace('<svg', '<svg style="width:72px;height:72px;stroke:#ccc;margin-bottom:10px"') +
         '<p>Giỏ hàng đang trống</p><button class="tt-btn gh" style="margin-top:14px;width:auto;padding:10px 22px" data-shop>Tiếp tục mua sắm</button></div>';
@@ -381,17 +404,50 @@
           '>−</button><span>' + it.q + '</span><button data-d="1" data-i="' + i + '"' + (it.q >= 10 ? ' disabled' : '') + '>+</button></div></div></div>' +
           '<button class="rm" data-rm="' + i + '">Xoá</button></div>';
       }).join('');
-    sum.innerHTML = '<div class="l"><span>Tạm tính (' + t.n + ' sản phẩm)</span><span>' + vnd(t.sub) + '</span></div>' +
-      '<div class="l"><span>Phí vận chuyển</span><span>' + (t.ship ? vnd(t.ship) : '<span class="tt-free">Miễn phí</span>') + '</span></div>' +
-      '<div class="l t"><span>Tổng thanh toán</span><b>' + vnd(t.total) + '</b></div>' +
-      '<button class="tt-btn" id="ttCheckout">Đặt hàng</button>';
+    sum.innerHTML = sumHtml(t, '<button class="tt-btn" id="ttCheckout">Đặt hàng</button>');
+  }
+  // ----- Trang "Thông tin đặt hàng" (giống bản demo) -----
+  function renderCheckout(t, body, sum) {
+    $('#ttCTitle').textContent = 'Thông tin đặt hàng';
+    var fld = function (id, name, ph, type, msg) {
+      return '<div class="tt-fld" id="' + id + '"><input name="' + name + '" type="' + type + '" placeholder="' + ph + '" value="' + esc(draft[name] || '') + '">' +
+        '<div class="msg">' + msg + '</div></div>';
+    };
+    body.innerHTML =
+      '<form class="tt-form" id="ttCo" novalidate><h3>Địa chỉ nhận hàng</h3>' +
+        fld('ttFN', 'full_name', 'Họ và tên', 'text', 'Vui lòng nhập họ tên') +
+        fld('ttFP', 'phone_number', 'Số điện thoại', 'tel', 'Số điện thoại không hợp lệ') +
+        fld('ttFA', 'address', 'Địa chỉ: số nhà / thôn / xóm, phường/xã, tỉnh', 'text', 'Vui lòng nhập địa chỉ') +
+        '<div class="tt-fld"><textarea name="note" rows="2" placeholder="Ghi chú cho shop (không bắt buộc)">' + esc(draft.note || '') + '</textarea></div></form>' +
+      '<div class="tt-form"><h3>Phương thức thanh toán</h3><div class="tt-cod">💵 Thanh toán khi nhận hàng (COD)</div></div>' +
+      '<div class="tt-form tt-mini"><h3>Sản phẩm (' + t.n + ')</h3>' + cart.map(function (it) {
+        return '<div class="r"><span>' + esc(it.name) + ' — ' + esc(it.label) + (it.size ? ', ' + esc(it.size) : '') + ' × ' + it.q + '</span><b>' + vnd(it.price * it.q) + '</b></div>';
+      }).join('') + '</div>';
+    sum.innerHTML = sumHtml(t, '<button class="tt-btn" id="ttPlace">Xác nhận đặt hàng · ' + vnd(t.total) + '</button>');
+    $('#ttCo').oninput = function () { $$('#ttCo [name]').forEach(function (i) { draft[i.name] = i.value; }); };
+  }
+  function closeWebcakePopup() {
+    var pop = P && P.form && P.form.closest('.com-popup'); if (!pop || pop.classList.contains('d-none')) return;
+    var vm = vmAll(), x = $$('[id^="w-"]', pop).filter(function (el) {
+      return ((vm[el.id.slice(2)] || {}).events || []).some(function (ev) { return ev.action === 'close_popup'; });
+    })[0];
+    if (x) x.click();
+  }
+  function renderDone(info) {
+    view = 'done'; setTimeout(closeWebcakePopup, 300);
+    $('#ttCTitle').textContent = 'Đặt hàng thành công';
+    $('#ttCBody').innerHTML = '<div class="tt-ok"><div class="tick">✓</div><h3>Cảm ơn bạn đã đặt hàng!</h3>' +
+      '<p class="sm">Shop sẽ gọi xác nhận trong thời gian sớm nhất.</p><pre>' + esc(info) + '</pre>' +
+      '<button class="tt-btn" data-again>Tiếp tục mua sắm</button></div>';
+    $('#ttCSum').style.display = 'none';
   }
   cartEl.addEventListener('click', function (e) {
     var t = e.target.closest('button'); if (!t) return;
     if (t.dataset.d) { var it = cart[+t.dataset.i]; it.q = Math.max(1, Math.min(10, it.q + +t.dataset.d)); }
     else if (t.dataset.rm) cart.splice(+t.dataset.rm, 1);
-    else if (t.hasAttribute('data-shop')) { cartEl.classList.remove('on'); return; }
-    else if (t.id === 'ttCheckout') { checkout(); return; }
+    else if (t.hasAttribute('data-shop') || t.hasAttribute('data-again')) { cartEl.classList.remove('on'); view = 'cart'; return; }
+    else if (t.id === 'ttCheckout') { view = 'checkout'; renderCart(); return; }
+    else if (t.id === 'ttPlace') { placeOrder(); return; }
     else return;
     save(cart); badge(); renderCart();
   });
@@ -420,28 +476,70 @@
     });
     return best;
   }
-  function checkout() {
-    cartEl.classList.remove('on');
-    if (!P || !P.form) { toast('!', 'Mở một trang sản phẩm để đặt hàng'); return; }
-    var mine = cart.filter(function (it) { return it.code === P.code; })[0];
-    if (mine) {
-      var r = P.variants.filter(function (v) { return v.value === mine.value; })[0];
-      var re = r && document.getElementById(r.id); if (re && !re.checked) re.click();
-      if (P.sizeSel && mine.size) setVal(P.sizeSel, mine.size);
-    }
-    var opener = formOpener();
-    if (opener) opener.click();
-    else P.form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(fillNote, 400);
+  // ----- Xác nhận đặt hàng: kiểm tra, rồi gửi ngầm qua form Webcake (đơn về Pancake) -----
+  var sending = false;
+  function phoneRe() {
+    var vm = vmAll(), re = null;
+    Object.keys(vm).forEach(function (id) { var sp = vm[id].specials || {}; if (sp.phone_validator) re = sp.phone_validator; });
+    try { return new RegExp(re || '^(\\+84|84|0)(3([2-9])|5(2|5|6|8|9)|7(0|[6-9])|8([1-9])|9([0-4]|[6-9]))([0-9]{7})$'); } catch (e) { return /^(\+?84|0)\d{9}$/; }
   }
-  function fillNote() {
-    var note = noteField(P.form);
-    if (note && cart.length) setVal(note, 'GIỎ HÀNG: ' + summary());
+  function loader(on) {
+    var l = $('#ttLoad');
+    if (!l) { l = document.createElement('div'); l.id = 'ttLoad'; l.className = 'tt tt-load'; l.innerHTML = '<div><i></i>Đang gửi đơn hàng…</div>'; document.body.appendChild(l); }
+    l.classList.toggle('on', !!on);
   }
-  // Khi khách bấm ĐẶT HÀNG của Webcake: ghi danh sách giỏ vào ô gio_hang hoặc cuối địa chỉ
+  function placeOrder() {
+    if (sending) return;
+    var f = {}; $$('#ttCo [name]').forEach(function (i) { f[i.name] = i.value.trim(); });
+    var phone = (f.phone_number || '').replace(/[\s.]/g, '');
+    var okN = f.full_name.length >= 2, okP = phoneRe().test(phone), okA = f.address.length >= 5;
+    $('#ttFN').classList.toggle('bad', !okN); $('#ttFP').classList.toggle('bad', !okP); $('#ttFA').classList.toggle('bad', !okA);
+    if (!(okN && okP && okA)) return;
+    if (!P || !P.form) { toast('!', 'Không tìm thấy form đặt hàng của trang'); return; }
+    var t = totals();
+    var info = 'Khách: ' + f.full_name + ' · ' + phone + '\nĐ/c: ' + f.address + (f.note ? '\nGhi chú: ' + f.note : '') + '\n\n' +
+      cart.map(function (it) { return '• [' + it.code + '] ' + it.name + ' — ' + it.label + (it.size ? ', ' + it.size : '') + ' × ' + it.q + ' = ' + vnd(it.price * it.q); }).join('\n') +
+      '\n\nTạm tính: ' + vnd(t.sub) + '\nVận chuyển: ' + (t.ship ? vnd(t.ship) : 'Miễn phí') + '\nTổng (COD): ' + vnd(t.total);
+    var cartTxt = 'GIỎ HÀNG: ' + summary() + (f.note ? ' | GHI CHÚ: ' + f.note : '');
+    sending = true; loader(true);
+    // form Webcake chỉ đọc ô đang hiển thị → mở popup đặt hàng (nằm dưới lớp "Đang gửi")
+    var opener = formOpener(); if (opener) opener.click();
+    setTimeout(function () {
+      var F = P.form, q = function (n) { return $('[name="' + n + '"]', F); };
+      var mine = cart.filter(function (it) { return it.code === P.code; })[0];
+      if (mine) {
+        var r = P.variants.filter(function (v) { return v.value === mine.value; })[0];
+        var re = r && document.getElementById(r.id); if (re && !re.checked) re.click();
+        if (P.sizeSel && mine.size) setVal(P.sizeSel, mine.size);
+      }
+      if (q('full_name')) setVal(q('full_name'), f.full_name);
+      if (q('phone_number')) setVal(q('phone_number'), phone);
+      var note = noteField(F);
+      if (note) { setVal(note, cartTxt); if (q('address')) setVal(q('address'), f.address); }
+      else if (q('address')) setVal(q('address'), f.address + MARK + cartTxt.replace(/^GIỎ HÀNG: /, ''));
+      var btn = $('button[type=submit]', F) || $('.com-button', F);
+      sentAt = Date.now();
+      if (btn) btn.click();
+      // chờ Webcake xử lý: chuyển trang cảm ơn (pagehide xóa giỏ) hoặc xóa trắng form / đóng popup
+      var pop = F.closest('.com-popup'), popWasOpen = pop && !pop.classList.contains('d-none'), start = Date.now();
+      (function watch() {
+        var ph = q('phone_number'), done = (ph && !ph.value) || (popWasOpen && pop.classList.contains('d-none'));
+        if (done) {
+          sending = false; loader(false); cart = []; save(cart); badge(); draft = {}; renderDone(info); return;
+        }
+        if (Date.now() - start > 12000) {
+          // Webcake báo lỗi / chưa gửi được → hiện popup Webcake để khách xem thông báo
+          sending = false; loader(false); sentAt = 0; cartEl.classList.remove('on'); view = 'cart';
+          toast('!', 'Vui lòng kiểm tra lại thông tin'); return;
+        }
+        setTimeout(watch, 400);
+      })();
+    }, 600);
+  }
+  // Khi khách bấm ĐẶT HÀNG của Webcake (trường hợp tự mở popup): ghi danh sách giỏ vào ô gio_hang hoặc cuối địa chỉ
   var sentAt = 0, sentTimer = 0;
   function onSubmitIntent(e) {
-    if (!P || !P.form || !cart.length || !P.form.contains(e.target)) return;
+    if (sending || !P || !P.form || !cart.length || !P.form.contains(e.target)) return;
     if (e.type === 'click' && !e.target.closest('button[type=submit], .com-button')) return;
     var note = noteField(P.form), addr = $('input[name=address], textarea[name=address]', P.form);
     if (note) setVal(note, 'GIỎ HÀNG: ' + summary());
