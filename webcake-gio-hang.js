@@ -492,7 +492,7 @@
     return best;
   }
   // ----- Xác nhận đặt hàng: kiểm tra, rồi gửi ngầm qua form Webcake (đơn về Pancake) -----
-  var sending = false;
+  var sending = false, bypass = false;
   function phoneRe() {
     var vm = vmAll(), re = null;
     Object.keys(vm).forEach(function (id) { var sp = vm[id].specials || {}; if (sp.phone_validator) re = sp.phone_validator; });
@@ -518,7 +518,16 @@
     var cartTxt = 'GIỎ HÀNG: ' + summary() + (f.note ? ' | GHI CHÚ: ' + f.note : '');
     sending = true; loader(true);
     // form Webcake chỉ đọc ô đang hiển thị → mở popup đặt hàng (nằm dưới lớp "Đang gửi")
-    var opener = formOpener(); if (opener) opener.click();
+    var pop0 = P.form.closest('.com-popup'), pid = pop0 && pop0.id.replace(/^w-/, '');
+    if (pid && pop0.classList.contains('d-none')) {
+      if (window.webcake && typeof webcake.open_popup === 'function' && vmAll()[pid]) {
+        try { webcake.open_popup(pid); } catch (e) {}
+      }
+      if (pop0.classList.contains('d-none')) {
+        // dự phòng: bấm nút mở popup của Webcake (bỏ qua bộ bắt click của giỏ hàng)
+        var opener = formOpener(); if (opener) { bypass = true; try { opener.click(); } finally { bypass = false; } }
+      }
+    }
     setTimeout(function () {
       var F = P.form, q = function (n) { return $('[name="' + n + '"]', F); };
       var mine = cart.filter(function (it) { return it.code === P.code; })[0];
@@ -587,7 +596,7 @@
       return null;
     };
     document.addEventListener('click', function (e) {
-      var t = e.target; if (!t.closest || t.closest('.tt') && !t.closest('[data-cart]') || t.closest('.com-popup')) return;
+      var t = e.target; if (bypass || sending || !t.closest || t.closest('.tt') && !t.closest('[data-cart]') || t.closest('.com-popup')) return;
       var act = null;
       if (hit(t, /^Thêm vào\s*Giỏ hàng$/i)) act = 'add';
       else if (hit(t, /^Mua ngay$/i)) act = 'buy';
