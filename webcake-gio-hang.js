@@ -29,7 +29,15 @@
       { code: 'TT035', name: 'Áo Blazer tôn dáng', from: 350000, img: '09/a3/07/05/23d6da50308889f14ec41df3a7d62959a44ff4de4668334f0e84bd05-w:1306-h:2048-l:178698-t:image/jpeg.jpg' },
       { code: 'TT034', name: 'Set đồ dạ Tweed phong cách sang trọng', from: 980000, img: 'b3/5f/1a/8c/138aa4d0ffa0d12d8a2a97d1dc48a118652be14fc9761c455ca2aeee-w:1260-h:2296-l:479562-t:image/jpeg.jpg' },
       { code: 'TT033', name: 'Set áo ren hoa & chân váy lụa', from: 390000, img: 'f9/ba/36/60/5769415a1605d1ae8487a1c8cbb60828c60301a095a339254222cf3e-w:1080-h:1920-l:262505-t:image/jpeg.jpg' }
-    ]
+    ],
+    // "Mô tả sản phẩm" theo mã trang (mã không có ở đây thì lấy mô tả SEO của trang)
+    desc: {
+      TT037: 'Set gồm áo khoác dạ nữ dáng ngắn ngang hông kèm đai và chân váy nhung ngắn. Áo nâu socola, cúc kim loại hình trái tim; chân váy chữ A đen, phom trơn tối giản.',
+      TT036: 'Set áo lửng viền bèo phối chân váy bút chì, tôn dáng, phù hợp đi làm, đi chơi.',
+      TT035: 'Áo blazer form tôn dáng, tặng kèm áo 2 dây.',
+      TT034: 'Set dạ Tweed sang trọng, chuẩn chất thu đông.',
+      TT033: 'Set áo ren hoa nữ tính phối chân váy lụa mềm.'
+    }
   };
   var MARK = ' || GIỎ HÀNG: ';
   var CDN = function (p) { return 'https://content.pancake.vn/web-media-264/fwebp80/' + p; };
@@ -187,6 +195,13 @@
     '.tt-sum .l{display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0;color:#444}' +
     '.tt-sum .l.t{font-size:16px;font-weight:700;color:var(--ink);padding-top:6px}.tt-sum .l.t b{color:var(--b)}' +
     '.tt-sum .tt-btn{margin-top:10px}' +
+    '.tt-top{padding-bottom:64px}' +
+    '.tt-desc h3{font-size:14px;margin-bottom:8px;font-weight:700}.tt-desc p,.tt-desc li{color:#444;font-size:13.5px}.tt-desc ul{padding-left:18px!important;margin:8px 0!important}' +
+    '.tt-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:420px;height:56px;display:flex;background:#fff;border-top:1px solid #eee;z-index:30;padding-bottom:env(safe-area-inset-bottom)}' +
+    '.tt-bar .ico{width:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#555;gap:2px;text-align:center!important}' +
+    '.tt-bar .ico svg{width:20px;height:20px;stroke:#555}' +
+    '.tt-bar .add{flex:1;background:#fff3f0!important;color:var(--b)!important;font-weight:700;font-size:13px;line-height:1.2;border-left:1px solid #eee!important;text-align:center!important}' +
+    '.tt-bar .buy{flex:1;background:var(--b)!important;color:#fff!important;font-weight:700;font-size:14px;text-align:center!important}' +
     '.tt-toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.78);color:#fff;padding:16px 22px;border-radius:8px;text-align:center;z-index:2147483004;opacity:0;pointer-events:none;transition:all .2s;min-width:200px;font-size:14px}' +
     '.tt-toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}.tt-toast .a{font-size:28px;line-height:1}.tt-toast .b{margin-top:6px}';
 
@@ -246,13 +261,34 @@
         '<div class="tt-row"><span class="k">Đổi trả</span><span class="v">Kiểm tra hàng trước khi thanh toán</span></div>' +
         '<button class="tt-row" data-pick><span class="k">Phân loại</span><span class="v">' + P.variants.map(function (v) { return esc(v.label); }).join(', ') +
           (P.sizes.length ? ' · <b>' + P.sizes.length + ' size</b>' : '') + '</span><span class="c">›</span></button></div>' +
+      '<div class="tt-blk tt-desc"><h3>Mô tả sản phẩm</h3><p>' + esc(CFG.desc[P.code] || ($('meta[name=description]') || {}).content || P.name) + '</p>' +
+        '<ul>' + P.variants.map(function (v) { return '<li>' + esc(v.label) + ': <b>' + vnd(v.price) + '</b>' + (v.free ? ' + miễn ship' : '') + '</li>'; }).join('') + '</ul>' +
+        (P.sizes.length ? '<p><b>Bảng size:</b> ' + P.sizes.map(esc).join(' · ') + '</p>' : '') + '</div>' +
       (others.length ? '<div class="tt-blk"><div class="tt-st">Sản phẩm khác của shop <small>Gộp nhiều món vào 1 đơn</small></div><div class="tt-grid">' +
         others.map(function (o) {
           return '<a class="tt-pc" href="/' + esc(o.code) + '"><img src="' + esc(CDN(o.img)) + '" alt="" loading="lazy"><div class="in"><div class="nm">' + esc(o.name) +
             '</div><div class="p">từ ' + vnd(o.from) + '</div><div class="go">Xem & thêm vào giỏ</div></div></a>';
         }).join('') + '</div></div>' : '');
     P.sec.parentNode.insertBefore(top, P.sec);
-    P.sec.style.display = 'none';
+    // ẩn toàn bộ section của Webcake (popup đặt hàng vẫn giữ để dùng form)
+    $$('.com-section').forEach(function (s) { if (!s.closest('.com-popup') && !s.contains(top)) s.style.display = 'none'; });
+    document.body.style.background = '#f5f5f5';
+    // thanh dưới kiểu demo
+    var bar = document.createElement('nav'); bar.className = 'tt tt-bar';
+    bar.innerHTML =
+      '<button class="ico" data-native="cửa hàng"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11h16V9M3 9h18"/></svg>Cửa hàng</button>' +
+      '<button class="ico" data-native="trò chuyện"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Trò chuyện</button>' +
+      '<button class="add" data-mode="add">Thêm vào<br>Giỏ hàng</button><button class="buy" data-mode="buy">Mua ngay</button>';
+    document.body.appendChild(bar);
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.mode) return openSheet(b.dataset.mode);
+      // "Cửa hàng"/"Trò chuyện": chạy đúng hành động của nút gốc trên trang Webcake
+      var key = b.dataset.native, orig = $$('[id^="w-"]').filter(function (el) {
+        return !el.closest('.tt') && (el.innerText || '').trim().toLowerCase() === key && (vmAll()[el.id.slice(2)] || {}).events && vmAll()[el.id.slice(2)].events.length;
+      })[0];
+      if (orig) orig.click(); else toast('ℹ', 'Liên hệ shop qua hotline hoặc Messenger');
+    });
 
     var sl = $('#ttSl');
     if (sl) {
@@ -274,8 +310,8 @@
   // ===== Bảng chọn phân loại =====
   var sh = { vi: -1, si: -1, q: 1 };
   var sheet = $('#ttSheet'), ov = $('#ttOv');
-  function openSheet() {
-    sh = { vi: P.variants.length === 1 ? 0 : -1, si: P.sizes.length === 1 ? 0 : -1, q: 1 };
+  function openSheet(mode) {
+    sh = { vi: P.variants.length === 1 ? 0 : -1, si: P.sizes.length === 1 ? 0 : -1, q: 1, mode: mode === 'buy' ? 'buy' : 'add' };
     renderSheet(); ov.classList.add('on'); sheet.classList.add('on');
   }
   function closeAll() { ov.classList.remove('on'); sheet.classList.remove('on'); }
@@ -312,7 +348,8 @@
       var ex = cart.filter(function (it) { return it.code === P.code && it.value === v.value && it.size === size; })[0];
       if (ex) ex.q = Math.min(10, ex.q + sh.q);
       else cart.push({ code: P.code, name: P.name, img: P.imgs[0] || '', value: v.value, label: v.label, price: v.price, free: v.free, size: size, q: sh.q });
-      save(cart); closeAll(); badge(true); toast('✓', 'Đã thêm vào giỏ hàng');
+      save(cart); closeAll(); badge(true);
+      if (sh.mode === 'buy') openCart(); else toast('✓', 'Đã thêm vào giỏ hàng');
       return;
     } else return;
     renderSheet();
@@ -426,14 +463,14 @@
     document.addEventListener('click', function (e) {
       if (!e.target.closest) return;
       var b = e.target.closest('.com-button');
-      if (b && nativeAdd.indexOf(b) >= 0) { e.preventDefault(); e.stopImmediatePropagation(); openSheet(); }
+      if (b && nativeAdd.indexOf(b) >= 0) { e.preventDefault(); e.stopImmediatePropagation(); openSheet('add'); }
     }, true);
     renderTop();
-    if (!nativeAdd.length) {
+    if (!P.sec) {
       // trang không có thanh dưới → thêm nút nổi
       var fab = document.createElement('div'); fab.className = 'tt';
       fab.innerHTML = '<button class="tt-btn" style="position:fixed;right:12px;bottom:16px;width:auto;padding:12px 18px;border-radius:24px;z-index:2147483000;box-shadow:0 3px 10px rgba(0,0,0,.25)">Thêm vào giỏ</button>';
-      fab.firstChild.onclick = openSheet; document.body.appendChild(fab);
+      fab.firstChild.onclick = function () { openSheet('add'); }; document.body.appendChild(fab);
     }
   }
   badge();
