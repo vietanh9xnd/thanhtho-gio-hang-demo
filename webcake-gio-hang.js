@@ -71,11 +71,23 @@
   function readProduct() {
     var radios = $$('input[type=radio][name=So_Luong]');
     if (!radios.length) radios = $$('form input[type=radio]');
-    if (!radios.length) return null;
-    var form = radios[0].closest('form');
+    var form = radios.length ? radios[0].closest('form') : null;
     var sizeSel = form && ($('select[name=SIZE]', form) || $('select[name=Size]', form) || $('select[name=size]', form));
-    var code = (location.pathname.split('/').filter(Boolean).pop() || 'SP').toUpperCase();
     var sec = $$('.com-section').filter(function (s) { return !s.closest('.com-popup'); })[0] || null;
+    var pageTxt = sec ? sec.innerText : '';
+    // mã sản phẩm: ưu tiên dòng "Mã: TT037" trên trang (link trang có thể không phải mã)
+    var code = ((pageTxt.match(/Mã\s*:\s*([A-Z]{1,5}\d{2,})/i) || [])[1] || location.pathname.split('/').filter(Boolean).pop() || 'SP').toUpperCase();
+    // trang chưa có form (popup đặt hàng chưa được Webcake dựng): đọc phân loại/size từ chữ trên trang
+    var txtVariants = [], txtSizes = [];
+    if (!radios.length) {
+      pageTxt.split('\n').forEach(function (l) {
+        var m = l.trim().match(/^(.{2,40}?)\s*:\s*(\d{1,3}(?:[.,]\d{3})+)\s*đ(.*)$/);
+        if (m) txtVariants.push({ id: '', value: m[1], label: m[1], price: parseInt(m[2].replace(/[.,]/g, ''), 10), free: isFree(m[3]) });
+      });
+      var sz = (pageTxt.match(/Bảng size\s*:\s*(.+)/i) || [])[1];
+      if (sz) txtSizes = sz.split('·').map(function (s) { return s.split(':')[0].trim(); }).filter(Boolean);
+      if (!txtVariants.length) return null;
+    }
     var vm = vmAll(), imgs = [];
     Object.keys(vm).forEach(function (id) {
       var el = document.getElementById('w-' + id);
@@ -84,10 +96,12 @@
     });
     if (!imgs.length) { var og = $('meta[property="og:image"]'); if (og) imgs.push(og.content); }
     var txt = sec ? sec.innerText.replace(/\s+/g, ' ') : '';
-    var old = (txt.match(/(\d{1,3}(?:[.,]\d{3})+)\s*đ/) || [])[1];
-    var variants = radios.map(function (r) {
+    // giá gạch = số lớn hơn trong 2 giá đầu tiên của trang (trang demo: "680.000đ 970.000đ")
+    var old = (txt.match(/\d{1,3}(?:[.,]\d{3})+(?=\s*đ)/g) || []).slice(0, 2)
+      .sort(function (a, b) { return parseInt(b.replace(/[.,]/g, ''), 10) - parseInt(a.replace(/[.,]/g, ''), 10); })[0];
+    var variants = radios.length ? radios.map(function (r) {
       return { id: r.id, value: r.value, label: shortName(r.value), price: parsePrice(r.value), free: isFree(r.value) };
-    });
+    }) : txtVariants;
     return {
       code: code,
       name: (document.title || code).trim(),
@@ -99,7 +113,7 @@
       rating: (txt.match(/(\d[.,]\d)\s*\/\s*5\s*\(([^)]+)\)/) || []).slice(1),
       sold: (txt.match(/Đã bán\s*([\d.,]+\s*K?)/i) || [])[1] || '',
       variants: variants,
-      sizes: sizeSel ? $$('option', sizeSel).map(function (o) { return o.value; }).filter(Boolean) : []
+      sizes: sizeSel ? $$('option', sizeSel).map(function (o) { return o.value; }).filter(Boolean) : txtSizes
     };
   }
 
@@ -496,7 +510,7 @@
     var okN = f.full_name.length >= 2, okP = phoneRe().test(phone), okA = f.address.length >= 5;
     $('#ttFN').classList.toggle('bad', !okN); $('#ttFP').classList.toggle('bad', !okP); $('#ttFA').classList.toggle('bad', !okA);
     if (!(okN && okP && okA)) return;
-    if (!P || !P.form) { toast('!', 'Không tìm thấy form đặt hàng của trang'); return; }
+    if (!P || !P.form) { toast('!', 'Trang chưa có form đặt hàng – vui lòng liên hệ shop'); return; }
     var t = totals();
     var info = 'Khách: ' + f.full_name + ' · ' + phone + '\nĐ/c: ' + f.address + (f.note ? '\nGhi chú: ' + f.note : '') + '\n\n' +
       cart.map(function (it) { return '• [' + it.code + '] ' + it.name + ' — ' + it.label + (it.size ? ', ' + it.size : '') + ' × ' + it.q + ' = ' + vnd(it.price * it.q); }).join('\n') +
@@ -581,7 +595,7 @@
       if (!act) return;
       e.preventDefault(); e.stopImmediatePropagation(); openSheet(act);
     }, true);
-  } else if (P) {
+  } else if (P && P.form) {
     var nativeAdd = $$('.com-button').filter(function (b) { return /thêm\s*vào\s*giỏ/i.test(b.innerText || ''); });
     document.addEventListener('click', function (e) {
       if (!e.target.closest) return;
