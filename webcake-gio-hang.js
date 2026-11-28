@@ -78,8 +78,9 @@
     var sec = $$('.com-section').filter(function (s) { return !s.closest('.com-popup'); })[0] || null;
     var vm = vmAll(), imgs = [];
     Object.keys(vm).forEach(function (id) {
-      if (vm[id].type === 'gallery' && sec && sec.querySelector('#w-' + id))
-        ((vm[id].specials || {}).media || []).forEach(function (m) { if (m.type !== 'video' && m.link) imgs.push(smallImg(m.link)); });
+      var el = document.getElementById('w-' + id);
+      if (imgs.length || vm[id].type !== 'gallery' || !el || el.closest('.com-popup')) return;
+      ((vm[id].specials || {}).media || []).forEach(function (m) { if (m.type !== 'video' && m.link) imgs.push(smallImg(m.link)); });
     });
     if (!imgs.length) { var og = $('meta[property="og:image"]'); if (og) imgs.push(og.content); }
     var txt = sec ? sec.innerText.replace(/\s+/g, ' ') : '';
@@ -556,7 +557,31 @@
   window.addEventListener('storage', function (e) { if (e.key === CFG.key) { cart = load(); badge(); } });
 
   // ===== Nút "Thêm vào giỏ hàng" có sẵn của Webcake → mở bảng chọn =====
-  if (P) {
+  // Trang đã dựng giao diện demo bằng phần tử Webcake (có nút "🛒" trên trang):
+  // không vẽ lại gì, chỉ gắn giỏ hàng vào các nút theo chữ trên nút.
+  var nativeCart = P && $$('.com-button').filter(function (b) { return !b.closest('.com-popup') && (b.innerText || '').trim() === '🛒'; })[0];
+  if (nativeCart) {
+    nativeCart.setAttribute('data-cart', '');
+    nativeCart.style.overflow = 'visible';
+    var bd = document.createElement('span'); bd.className = 'tt tt-badge'; bd.hidden = true;
+    bd.style.cssText = 'position:absolute;top:2px;right:0;z-index:3';
+    nativeCart.appendChild(bd);
+    var hit = function (el, re) {
+      for (var i = 0; el && i < 6 && el !== document.body; i++, el = el.parentElement) {
+        if (el.id && /^w-/.test(el.id) && re.test((el.innerText || '').replace(/\s+/g, ' ').trim())) return el;
+      }
+      return null;
+    };
+    document.addEventListener('click', function (e) {
+      var t = e.target; if (!t.closest || t.closest('.tt') && !t.closest('[data-cart]') || t.closest('.com-popup')) return;
+      var act = null;
+      if (hit(t, /^Thêm vào\s*Giỏ hàng$/i)) act = 'add';
+      else if (hit(t, /^Mua ngay$/i)) act = 'buy';
+      else if (hit(t, /^Phân loại\b/i)) act = 'add';
+      if (!act) return;
+      e.preventDefault(); e.stopImmediatePropagation(); openSheet(act);
+    }, true);
+  } else if (P) {
     var nativeAdd = $$('.com-button').filter(function (b) { return /thêm\s*vào\s*giỏ/i.test(b.innerText || ''); });
     document.addEventListener('click', function (e) {
       if (!e.target.closest) return;
