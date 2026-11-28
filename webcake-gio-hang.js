@@ -439,7 +439,39 @@
         return '<div class="r"><span>' + esc(it.name) + ' — ' + esc(it.label) + (it.size ? ', ' + esc(it.size) : '') + ' × ' + it.q + '</span><b>' + vnd(it.price * it.q) + '</b></div>';
       }).join('') + '</div>';
     sum.innerHTML = sumHtml(t, '<button class="tt-btn" id="ttPlace">Xác nhận đặt hàng · ' + vnd(t.total) + '</button>');
-    $('#ttCo').oninput = function () { $$('#ttCo [name]').forEach(function (i) { draft[i.name] = i.value; }); };
+    $('#ttCo').oninput = function () {
+      $$('#ttCo [name]').forEach(function (i) { draft[i.name] = i.value; });
+      clearTimeout(draftTimer); draftTimer = setTimeout(syncDraft, 1000);
+    };
+    $('#ttCo').addEventListener('change', function () { clearTimeout(draftTimer); syncDraft(); });
+  }
+  // Đồng bộ "form chưa hoàn tất": chép dữ liệu khách đang nhập sang form Webcake (popup đặt hàng).
+  // Webcake tự lưu bản nháp về Pancake khi ô trong form của nó thay đổi và SĐT hợp lệ – như khi khách gõ thẳng vào popup.
+  var draftTimer = 0, lastDraft = '';
+  function syncDraft() {
+    if (sending || !P || !P.form || view !== 'checkout' || !$('#ttCo')) return;
+    var f = {}; $$('#ttCo [name]').forEach(function (i) { f[i.name] = i.value.trim(); });
+    var phone = (f.phone_number || '').replace(/[\s.]/g, '');
+    if (!phoneRe().test(phone)) return;
+    var key = JSON.stringify([f, cart]); if (key === lastDraft) return; lastDraft = key;
+    try { fillWebcake(f, phone); } catch (e) {}
+  }
+  // điền dữ liệu giỏ + khách vào form Webcake
+  function fillWebcake(f, phone) {
+    var F = P.form, q = function (n) { return $('[name="' + n + '"]', F); };
+    var cartTxt = 'GIỎ HÀNG: ' + summary() + (f.note ? ' | GHI CHÚ: ' + f.note : '');
+    var mine = cart.filter(function (it) { return it.code === P.code; })[0];
+    if (mine) {
+      var r = P.variants.filter(function (v) { return v.value === mine.value; })[0];
+      var re = r && r.id && document.getElementById(r.id); if (re && !re.checked) re.click();
+      if (P.sizeSel && mine.size && P.sizeSel.value !== mine.size) setVal(P.sizeSel, mine.size);
+    }
+    var note = noteField(F);
+    if (note) { setVal(note, cartTxt); if (q('address')) setVal(q('address'), f.address || ''); }
+    else if (q('address')) setVal(q('address'), (f.address || '') + MARK + cartTxt.replace(/^GIỎ HÀNG: /, ''));
+    if (q('full_name')) setVal(q('full_name'), f.full_name || '');
+    // SĐT điền cuối cùng: Webcake chỉ lưu nháp khi ô SĐT đã có số hợp lệ
+    if (q('phone_number')) setVal(q('phone_number'), phone);
   }
   function closeWebcakePopup() {
     var pop = P && P.form && P.form.closest('.com-popup'); if (!pop || pop.classList.contains('d-none')) return;
@@ -515,8 +547,7 @@
     var info = 'Khách: ' + f.full_name + ' · ' + phone + '\nĐ/c: ' + f.address + (f.note ? '\nGhi chú: ' + f.note : '') + '\n\n' +
       cart.map(function (it) { return '• [' + it.code + '] ' + it.name + ' — ' + it.label + (it.size ? ', ' + it.size : '') + ' × ' + it.q + ' = ' + vnd(it.price * it.q); }).join('\n') +
       '\n\nTạm tính: ' + vnd(t.sub) + '\nVận chuyển: ' + (t.ship ? vnd(t.ship) : 'Miễn phí') + '\nTổng (COD): ' + vnd(t.total);
-    var cartTxt = 'GIỎ HÀNG: ' + summary() + (f.note ? ' | GHI CHÚ: ' + f.note : '');
-    sending = true; loader(true);
+    clearTimeout(draftTimer); sending = true; loader(true);
     // form Webcake chỉ đọc ô đang hiển thị → mở popup đặt hàng (nằm dưới lớp "Đang gửi")
     var pop0 = P.form.closest('.com-popup'), pid = pop0 && pop0.id.replace(/^w-/, '');
     if (pid && pop0.classList.contains('d-none')) {
@@ -530,17 +561,7 @@
     }
     setTimeout(function () {
       var F = P.form, q = function (n) { return $('[name="' + n + '"]', F); };
-      var mine = cart.filter(function (it) { return it.code === P.code; })[0];
-      if (mine) {
-        var r = P.variants.filter(function (v) { return v.value === mine.value; })[0];
-        var re = r && document.getElementById(r.id); if (re && !re.checked) re.click();
-        if (P.sizeSel && mine.size) setVal(P.sizeSel, mine.size);
-      }
-      if (q('full_name')) setVal(q('full_name'), f.full_name);
-      if (q('phone_number')) setVal(q('phone_number'), phone);
-      var note = noteField(F);
-      if (note) { setVal(note, cartTxt); if (q('address')) setVal(q('address'), f.address); }
-      else if (q('address')) setVal(q('address'), f.address + MARK + cartTxt.replace(/^GIỎ HÀNG: /, ''));
+      fillWebcake(f, phone);
       var btn = $('button[type=submit]', F) || $('.com-button', F);
       sentAt = Date.now();
       if (btn) btn.click();
